@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.DS_Store
+
+# model weights (fetched on first run / supplied locally)
+*.pt
+*.onnx
+
+# generated outputs
+features_out.json
+cache/*
+!cache/.gitkeep
+outputs/*
+!outputs/.gitkeep

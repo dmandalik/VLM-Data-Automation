@@ -1,0 +1,24 @@
+# ── generated / local / large — never commit ──
+sim_cut/cache/
+sim_cut/outputs/
+**/__pycache__/
+*.pyc
+.venv/
+venv/
+*.pt
+*.onnx
+*.onnx.*
+.DS_Store
+.pytest_cache/
+sim_cut/features_out.json
+sim_cut.zip
+
+# ── not required to RUN the app — kept out of this minimal repo ──
+sim_cut/tests/
+sim_cut/notebooks/
+sim_cut/docs/
+sim_cut/FINDINGS_phase1.md
+sim_cut/FINDINGS_phase2.md
+sim_cut/conftest.py
+HANDOFF_pose_cut_detection.md
+starter_features.py

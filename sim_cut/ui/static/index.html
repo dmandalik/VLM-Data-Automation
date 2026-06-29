@@ -1,0 +1,163 @@
+<!doctype html><html><head><meta charset="utf-8"><title>sim_cut review</title>
+<style>
+:root{--bg:#fafaf8;--panel:#fff;--ink:#1c1c1a;--muted:#6b6a64;--line:#e4e2da;--blue:#378add;--green:#639922;--red:#e24b4a;--amber:#ba7517;--sel:#eef3fb;--track:#dddbd2;}
+@media (prefers-color-scheme:dark){:root{--bg:#191917;--panel:#232320;--ink:#ececdf;--muted:#9a988e;--line:#36352f;--sel:#1d2733;--track:#2f2e29;}}
+*{box-sizing:border-box}html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font:14px/1.5 -apple-system,system-ui,sans-serif;display:flex;flex-direction:column}
+button{font:inherit;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:7px;padding:5px 10px;cursor:pointer}
+button:hover{background:var(--sel)}button:active{transform:scale(.98)}
+button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:500}
+input{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:5px 8px}
+#top{display:flex;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}#top input{flex:1}
+#main{flex:1;display:flex;min-height:0}
+#queue{width:240px;flex:none;overflow:auto;border-right:1px solid var(--line);padding:8px}
+.qi{display:flex;gap:8px;padding:8px;border-radius:8px;cursor:pointer;border:1px solid transparent}
+.qi:hover{background:var(--sel)}.qi.sel{background:var(--sel);border-color:var(--line)}
+.qi .dot{width:9px;height:9px;border-radius:50%;margin-top:5px;flex:none}.qi small{color:var(--muted);display:block}
+.badge{display:inline-block;font-size:11px;padding:1px 6px;border-radius:6px;background:rgba(186,117,23,.16);color:var(--amber);margin-top:3px}
+#view{flex:1;overflow:auto;padding:16px;min-width:0}#empty{color:var(--muted);padding:40px;text-align:center}
+#frame{width:100%;height:44vh;object-fit:contain;background:#000;border-radius:10px 10px 0 0;display:block}
+#bar{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-top:0;border-radius:0 0 10px 10px;padding:8px 10px}
+.pp{width:38px;height:38px;border-radius:50%;font-size:14px;flex:none;display:flex;align-items:center;justify-content:center;padding:0}
+#tl{position:relative;flex:1;height:58px;border-radius:8px;background:var(--track);cursor:pointer;touch-action:none}
+#spark{position:absolute;inset:0;width:100%;height:100%;opacity:.5}
+#segs{position:absolute;inset:0}
+.reg{position:absolute;top:0;bottom:0;opacity:.34;pointer-events:none}.reg.sel{opacity:.55}
+.chip{position:absolute;top:-21px;transform:translateX(-1px);font-size:11px;background:var(--panel);border:1px solid;border-radius:5px;padding:0 5px;cursor:pointer;white-space:nowrap;pointer-events:auto;z-index:4}.chip.sel{font-weight:500}
+.h{position:absolute;top:-4px;bottom:-4px;width:8px;margin-left:-4px;border-radius:3px;cursor:ew-resize;pointer-events:auto;opacity:.85;z-index:5;touch-action:none}.h:hover,.h.sel{opacity:1;box-shadow:0 0 0 2px var(--ink)}
+#ph{position:absolute;top:-3px;bottom:-3px;left:0;width:2px;background:var(--ink);pointer-events:none;z-index:6;will-change:transform}
+#ph::before{content:"";position:absolute;top:-5px;left:-5px;width:12px;height:12px;border-radius:50%;background:var(--ink)}
+#prev{position:absolute;bottom:100%;margin-bottom:8px;transform:translateX(-50%);display:none;pointer-events:none;text-align:center;z-index:7}
+#prev img{width:140px;height:80px;object-fit:cover;border:1px solid var(--line);border-radius:6px;background:#000;display:block}
+#prev span{font-size:11px;background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:0 5px;font-variant-numeric:tabular-nums}
+#tc{font-variant-numeric:tabular-nums;color:var(--muted);flex:none;min-width:92px;text-align:right}
+#spd{display:flex;gap:3px;flex:none}#spd button{padding:3px 7px;font-size:12px}#spd button.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.legend{font-size:11px;color:var(--muted);margin:8px 2px}
+.thumbs{display:flex;gap:6px;margin:8px 0}.thumbs figure{flex:0 0 200px;margin:0;text-align:center}
+.thumbs img{width:100%;height:108px;object-fit:cover;background:var(--panel);border:1px solid var(--line);border-radius:7px}.thumbs figcaption{font-size:11px;color:var(--muted)}
+#stab{margin:8px 0}
+.srow{display:flex;gap:6px;align-items:center;padding:4px;border-radius:7px;cursor:pointer}.srow.sel{background:var(--sel)}
+.srow .sw{width:11px;height:11px;border-radius:3px;flex:none}.lin{width:122px}.tin{width:62px}.srow button{padding:3px 7px;font-size:12px}
+#alert{display:none;align-items:center;gap:8px;padding:9px 11px;border-radius:8px;background:rgba(186,117,23,.14);border:1px solid rgba(186,117,23,.4);color:var(--amber);margin-bottom:10px}
+.k{color:var(--muted);font-size:12px}.mono{font-variant-numeric:tabular-nums}
+</style></head><body>
+<div id="top"><button onclick="browse()">Browse…</button>
+  <input id="folder" placeholder="/path/to/folder of clips" onkeydown="if(event.key==='Enter')openFolder()">
+  <button class="primary" onclick="openFolder()">Open &amp; process</button><span id="prog" class="k"></span></div>
+<div id="main"><div id="queue"></div><div id="view"><div id="empty">Open a folder of clips to begin.</div></div></div>
+<script>
+const $=s=>document.querySelector(s);
+let SESS=[],cur=null,det=null,dur=0,ct=0,phG=0,TLW=0,scrubbing=false,activeH=null,selSeg=0,prevTimer=null,playTimer=null,rate=1,lastReq=0;
+const FPS=10;
+async function api(u,o){try{const r=await fetch(u,o);const tx=await r.text();try{return JSON.parse(tx)}catch(_){return{error:`server ${r.status}`}}}catch(e){return{error:'cannot reach backend — run:  python -m ui.app'}}}
+const fmt=s=>{s=Math.max(0,Math.round(s||0));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+const parseT=v=>{if(v==null)return 0;v=(''+v).trim();if(v.includes(':')){const[m,s]=v.split(':');return (+m)*60+(+s)}return +v};
+const esc=s=>(''+s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const ED=()=>det.edit.segments;
+const PAL=['#ba7517','#7f77dd','#1d9e75','#d4537e','#d85a30','#378add','#639922'];
+const segColor=(i,l)=>l==='Demo'?'#378add':l==='Discussion'?'#639922':PAL[i%PAL.length];
+const segForObj=g=>det.segments.find(s=>g>=s.offset_s&&g<s.offset_s+s.duration_s)||det.segments[det.segments.length-1];
+
+async function browse(){try{if(window.pywebview&&window.pywebview.api&&window.pywebview.api.pick_folder){const f=await window.pywebview.api.pick_folder();if(f){$('#folder').value=f;openFolder()}}else{$('#prog').textContent='type the folder path, then Open';$('#folder').focus()}}catch(e){$('#prog').textContent='picker error: '+e}}
+async function openFolder(){const folder=$('#folder').value.trim();if(!folder){$('#prog').textContent='enter or browse to a folder first';return}$('#prog').textContent='scanning…';
+  const r=await api('/api/open',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({folder})});
+  if(r.error){$('#prog').textContent='⚠ '+r.error;return}SESS=r.sessions||[];renderQueue();if(!SESS.length){$('#prog').textContent='no videos found';return}poll();select(0)}
+let polling=false;
+async function poll(){if(polling)return;polling=true;const r=await api('/api/sessions');SESS=r.sessions;renderQueue();
+  const busy=SESS.some(s=>s.status==='queued'||s.status==='processing');const done=SESS.filter(s=>['confirmed','skipped'].includes(s.status)).length;
+  $('#prog').textContent=`${done}/${SESS.length} done`+(busy?' · processing…':'');
+  if(cur!=null&&(!det||det.status!=='ready')&&SESS[cur]&&SESS[cur].status==='ready')select(cur);polling=false;if(busy)setTimeout(poll,1500)}
+const dotColor=st=>({confirmed:'var(--green)',ready:'var(--blue)',processing:'var(--amber)',queued:'#b4b2a9',skipped:'#b4b2a9',error:'var(--red)'}[st]||'#b4b2a9');
+function renderQueue(){$('#queue').innerHTML=SESS.map(s=>{const an=(s.anomalies||[]).filter(a=>a.severity==='warn');
+  return `<div class="qi ${s.id===cur?'sel':''}" onclick="select(${s.id})"><div class="dot" style="background:${dotColor(s.status)}"></div>
+    <div style="min-width:0;flex:1"><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(s.name)}</div>
+    <small>${s.duration} · ${s.status}${s.confidence!=null?' · conf '+s.confidence:''}</small>${an.length?`<div class="badge">⚠ ${esc(an[0].msg)}</div>`:''}</div></div>`}).join('')}
+async function select(id){cur=id;renderQueue();pause();det=await api('/api/session/'+id);
+  if(det.status!=='ready'){$('#view').innerHTML=`<div id="empty">${det.status}…</div>`;return}
+  det.segments.forEach(s=>s._path=decodeURIComponent(s.url.split('path=')[1]));renderView()}
+
+function renderView(){const d=det;dur=d.duration_s;selSeg=0;ct=0;rate=1;
+  $('#view').innerHTML=`<div id="alert"></div>
+   <img id="frame" alt="frame preview">
+   <div id="bar"><button id="pp" class="pp" aria-label="play">▶</button>
+     <div id="tl"><svg id="spark" viewBox="0 0 100 60" preserveAspectRatio="none"></svg>
+       <div id="segs"></div><div id="ph"></div><div id="prev"><img id="pimg" alt=""><span id="plab"></span></div></div>
+     <div id="tc" class="mono">0:00 / ${fmt(dur)}</div>
+     <div id="spd"><button data-r="1" class="on">1×</button><button data-r="2">2×</button><button data-r="4">4×</button></div></div>
+   <div class="legend">frame preview · drag a clip's end-handles to crop both ends · scrub anywhere · space play · ←/→ frame · J/L ±5s · [ in · ] out · a add</div>
+   <div class="thumbs" id="thumbs"></div><div id="stab"></div>
+   <div class="row" style="display:flex;gap:8px;align-items:center;margin-top:12px"><button class="primary" onclick="confirmCut()">✂ Confirm &amp; export</button>
+     <button onclick="skip()">Skip</button><span id="outmsg" class="k"></span></div>`;
+  TLW=$('#tl').clientWidth;drawSpark();redraw();setTime(ED()[0]?ED()[0].start:0,true);thumbs();
+  const an=d.anomalies||[];if(an.length){$('#alert').style.display='flex';$('#alert').innerHTML=`<span>⚠ ${an.map(x=>esc(x.msg)).join(' · ')}</span>`}
+  bindUI();}
+
+function drawSpark(){const sp=det.spark||[];if(!sp.length)return;$('#spark').innerHTML=`<polyline points="${sp.map((v,i)=>`${(i/(sp.length-1)*100).toFixed(2)},${(58-v*54).toFixed(2)}`).join(' ')}" fill="none" stroke="var(--muted)" stroke-width="0.8" vector-effect="non-scaling-stroke"/>`}
+const pct=t=>Math.max(0,Math.min(100,t/dur*100));
+function drawTimeline(){$('#segs').innerHTML=ED().map((s,i)=>{const c=segColor(i,s.label),L=pct(s.start),R=pct(s.end),sel=i===selSeg?'sel':'';
+  return `<div class="reg ${sel}" style="left:${L}%;width:${Math.max(0,R-L)}%;background:${c}"></div>
+    <div class="chip ${sel}" data-i="${i}" style="left:${L}%;border-color:${c};color:${c}">${esc(s.label||'clip')}</div>
+    <div class="h ${sel}" data-s="${i}" data-w="s" style="left:${L}%;background:${c}"></div>
+    <div class="h ${sel}" data-s="${i}" data-w="e" style="left:${R}%;background:${c}"></div>`}).join('');head(phG)}
+function segTable(){$('#stab').innerHTML=ED().map((s,i)=>`<div class="srow ${i===selSeg?'sel':''}" onclick="selectSeg(${i})">
+  <span class="sw" style="background:${segColor(i,s.label)}"></span>
+  <input class="lin" value="${esc(s.label||'')}" onchange="setLabel(${i},this.value)" onclick="event.stopPropagation()">
+  <input class="tin mono" value="${fmt(s.start)}" onchange="setSeg(${i},'start',this.value)" onclick="event.stopPropagation()">
+  <button onclick="event.stopPropagation();hereSeg(${i},'start')" title="set in to playhead">⤓in</button>
+  <input class="tin mono" value="${fmt(s.end)}" onchange="setSeg(${i},'end',this.value)" onclick="event.stopPropagation()">
+  <button onclick="event.stopPropagation();hereSeg(${i},'end')" title="set out to playhead">⤓out</button>
+  <button onclick="event.stopPropagation();goSeg(${i})" title="preview start">▶</button>
+  <button onclick="event.stopPropagation();delSeg(${i})" title="delete">⌫</button></div>`).join('')+`<button onclick="addSeg()" style="margin-top:6px">+ add segment</button>`}
+const redraw=()=>{drawTimeline();segTable()};
+const phNow=()=>ct;
+function clampSeg(s){s.start=Math.max(0,Math.min(s.start,dur));s.end=Math.max(0,Math.min(s.end,dur));if(s.end<s.start+0.3)s.end=Math.min(dur,s.start+0.3);if(s.start>s.end-0.3)s.start=Math.max(0,s.end-0.3)}
+function selectSeg(i){selSeg=i;redraw();thumbs()}
+function setLabel(i,v){ED()[i].label=v.trim()||'clip';redraw();saveEdit()}
+function setSeg(i,w,v){ED()[i][w]=parseT(v);clampSeg(ED()[i]);redraw();saveEdit();thumbs()}
+function hereSeg(i,w){ED()[i][w]=ct;clampSeg(ED()[i]);redraw();saveEdit();thumbs()}
+function goSeg(i){setTime(ED()[i].start,true)}
+function addSeg(){ED().push({label:'Clip '+(ED().length+1),start:ct,end:Math.min(ct+30,dur)});selSeg=ED().length-1;redraw();saveEdit();thumbs()}
+function delSeg(i){if(ED().length<=1)return;ED().splice(i,1);if(selSeg>=ED().length)selSeg=ED().length-1;redraw();saveEdit();thumbs()}
+const saveEdit=()=>api('/api/edit/'+cur,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({segments:ED()})});
+function thumbs(){const s=ED()[selSeg];if(!s){$('#thumbs').innerHTML='';return}
+  const specs=[['in '+fmt(s.start),s.start],['out '+fmt(s.end),Math.max(0,s.end-0.2)]];
+  $('#thumbs').innerHTML=specs.map(([c,t])=>{const src=segForObj(Math.min(Math.max(t,0),dur-0.05));
+    return `<figure><img loading="lazy" src="/api/frame?path=${encodeURIComponent(src._path)}&t=${Math.max(0,t-src.offset_s).toFixed(2)}&w=360"><figcaption>${esc(s.label)} · ${c}</figcaption></figure>`}).join('')}
+
+function head(g){ct=Math.max(0,Math.min(g,dur));phG=ct;const ph=$('#ph');if(ph)ph.style.transform=`translateX(${dur?ct/dur*TLW:0}px)`;const tc=$('#tc');if(tc)tc.textContent=fmt(ct)+' / '+fmt(dur)}
+function showFrame(g,force){const now=performance.now();if(!force&&now-lastReq<55)return;lastReq=now;
+  g=Math.min(Math.max(g,0),Math.max(0,dur-0.05));const s=segForObj(g),f=$('#frame');if(s&&f)f.src=`/api/frame?path=${encodeURIComponent(s._path)}&t=${Math.max(0,g-s.offset_s).toFixed(2)}&w=720`}
+function setTime(g,force){head(g);showFrame(ct,force)}
+function play(){if(playTimer)return;$('#pp').textContent='⏸';playTimer=setInterval(()=>{let g=ct+rate/FPS;if(g>=dur){setTime(dur);pause();return}setTime(g)},1000/FPS)}
+function pause(){if(playTimer){clearInterval(playTimer);playTimer=null}const pp=$('#pp');if(pp)pp.textContent='▶'}
+function togglePlay(){playTimer?pause():play()}
+const seekGlobal=g=>setTime(g,true);
+function step(d){setTime(ct+d,true)}
+function bindUI(){
+  $('#pp').onclick=togglePlay;
+  $('#spd').querySelectorAll('button').forEach(b=>b.onclick=()=>{rate=+b.dataset.r;$('#spd').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b))});
+  const tl=$('#tl');
+  tl.onpointerdown=e=>{const h=e.target.closest('.h');if(h){activeH={s:+h.dataset.s,w:h.dataset.w};selSeg=activeH.s;tl.setPointerCapture(e.pointerId);redraw();return}
+    const ch=e.target.closest('.chip');if(ch){selectSeg(+ch.dataset.i);return}scrubbing=true;tl.setPointerCapture(e.pointerId);scrubTo(e)};
+  tl.onpointermove=e=>{if(activeH){const s=ED()[activeH.s];s[activeH.w==='s'?'start':'end']=xT(e);clampSeg(s);drawTimeline();previewAt(e,s[activeH.w==='s'?'start':'end'])}
+    else if(scrubbing)scrubTo(e);else previewAt(e)};
+  tl.onpointerup=e=>{if(activeH){activeH=null;saveEdit();segTable();thumbs()}else if(scrubbing){scrubbing=false;setTime(xT(e),true)}};
+  tl.onpointerleave=()=>{$('#prev').style.display='none'};
+  window.onresize=()=>{if(det&&det.status==='ready'){TLW=$('#tl').clientWidth;drawTimeline()}};
+}
+const xT=e=>{const r=$('#tl').getBoundingClientRect();return Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*dur};
+function scrubTo(e){const g=xT(e);head(g);showFrame(g);previewAt(e,g)}
+function previewAt(e,g){g=g==null?xT(e):g;const r=$('#tl').getBoundingClientRect(),p=$('#prev');p.style.display='block';p.style.left=Math.min(Math.max(e.clientX-r.left,70),r.width-70)+'px';$('#plab').textContent=fmt(g);
+  clearTimeout(prevTimer);prevTimer=setTimeout(()=>{const s=segForObj(g);if(s)$('#pimg').src=`/api/frame?path=${encodeURIComponent(s._path)}&t=${(g-s.offset_s).toFixed(2)}&w=240`},90)}
+async function confirmCut(){$('#outmsg').textContent='exporting…';const r=await api('/api/confirm/'+cur,{method:'POST'});
+  if(r.error){$('#outmsg').textContent='⚠ '+r.error;return}const fs=Object.values(r.outputs||{});
+  $('#outmsg').textContent=`saved ${fs.length} clip(s) → ${(r.dir||'').split('/').pop()}: `+fs.join(', ');poll()}
+async function skip(){await api('/api/skip/'+cur,{method:'POST'});poll()}
+document.addEventListener('keydown',e=>{if(!det||det.status!=='ready')return;if(/INPUT|TEXTAREA/.test(document.activeElement.tagName||''))return;
+  if(e.code==='Space'){e.preventDefault();togglePlay()}
+  else if(e.key==='ArrowRight'){e.preventDefault();step(e.shiftKey?1:1/15)}
+  else if(e.key==='ArrowLeft'){e.preventDefault();step(e.shiftKey?-1:-1/15)}
+  else if(e.key==='j'||e.key==='J')step(-5);else if(e.key==='l'||e.key==='L')step(5);
+  else if(e.key==='[')hereSeg(selSeg,'start');else if(e.key===']')hereSeg(selSeg,'end');
+  else if(e.key==='a'||e.key==='A')addSeg();else if(e.key==='Delete')delSeg(selSeg);else if(e.key==='Enter')confirmCut()});
+</script></body></html>

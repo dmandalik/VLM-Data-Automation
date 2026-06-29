@@ -1,0 +1,25 @@
+# Core
+numpy
+scipy
+opencv-python
+pyyaml
+tqdm
+
+# Temporal pipeline (Phase 2)
+ruptures            # change-point detection
+av                  # PyAV: seek-based frame sampling without full decode
+matplotlib          # diagnostics figures
+
+# Detector backend -- pick ONE:
+ultralytics         # YOLO11-pose. Pulls torch + torchvision (~2 GB). AGPL-3.0.
+# rtmlib            # RTMPose / RTMO. Apache-2.0. Also: pip install onnxruntime
+# onnxruntime       #   (or onnxruntime-gpu) -- rtmlib runtime
+
+# NOTE: the final video split shells out to system `ffmpeg` (install separately,
+# e.g. `brew install ffmpeg`). Sampling uses PyAV and does not require it.
+
+# Review UI (native popup app)
+fastapi
+uvicorn
+pywebview           # native macOS window; falls back to a browser tab if absent
+# httpx             # only needed to run the UI backend tests

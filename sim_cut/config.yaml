@@ -1,0 +1,92 @@
+# sim_cut configuration -- the single source of tunables for every stage.
+# CLI flags override matching fields where supported.
+
+# -- Stage A: frame sampling ------------------------------------------------
+sampling:
+  coarse_fps: 1.0            # fps for the whole-video pass (seek-based, cheap)
+  fine_fps: 6.0             # fps for the refine window around [t1, t2]
+  refine_pad_s: 8.0         # delta: padding on each side of the rough window
+  downscale_long_edge: 1280 # resize so the long edge <= this before detection (0 = off)
+
+# -- Stage B: detection -----------------------------------------------------
+detector:
+  backend: yolo             # yolo | rtmpose
+  weights: yolo11m-pose.pt  # local path, or an ultralytics auto-download name
+  conf: 0.25                # low -- overhead / occluded people score lower
+  device: null              # null = auto (cuda if available, else cpu)
+  drop_manikin: true        # apply the conservative manikin filter
+
+# -- Stage C: features ------------------------------------------------------
+features:
+  eps_pack: 0.06            # NN dist (frac of diagonal) below which two people are "packed"
+  tall_aspect: 1.6          # bbox h/w above which a box is "tall" (standing proxy)
+  kp_vis: 0.30              # keypoint score below which a joint is untrusted
+
+# -- Stage D: motion --------------------------------------------------------
+motion:
+  method: framediff         # framediff | flow
+  downscale_long_edge: 320  # motion is computed on a small gray image
+
+# -- Stage E: smoothing + fusion --------------------------------------------
+smoothing:
+  median_k: 5               # median-filter taps (odd); kills detector dropouts
+  ma_window_s: 11.0         # moving-average window, in seconds
+fusion:
+  method: score             # score | changepoint
+  # Weights for the diagnostic "discussion score".
+  # PHASE-2 FINDING (FINDINGS_phase2.md): on real video, posture does NOT separate
+  # demo from discussion over a full session (mixed postures in both -- the doc's
+  # original warning), and motion LEVELS overlap. The cut is marked by the
+  # WALK-OVER MOTION SPIKE, so the boundary stage anchors on that spike directly.
+  # These weights only shape the diagnostic score (motion-dominant), kept for
+  # visualization / corroboration -- they no longer drive t1/t2.
+  weights:
+    motion: 2.0             # dominant -- discussion is the quiet tail
+    posture: 0.3            # weak corroborator (the notch at the walk-over only)
+    dispersion: 0.0         # disabled -- failed on the frames
+    density: 0.0
+    packing: 0.0
+  changepoint:
+    model: rbf              # ruptures cost model
+    penalty: 3.0            # PELT penalty (higher = fewer breakpoints)
+
+# -- Stage F: boundary extraction -------------------------------------------
+boundary:
+  # Validated on real video: the cut is marked by the WALK-OVER MOTION SPIKE,
+  # not by posture or motion levels (which overlap). See FINDINGS_phase2.md.
+  edge_exclude_s: 30.0      # ignore spikes in the first/last N s when locating the walk-over
+  spike_frac: 0.30          # t1/t2 = where motion crosses this fraction up/down the spike
+  min_prominence: 1.8       # walk-over peak must be >= this x the surrounding motion baseline
+  min_separation_s: 30.0    # min spacing between candidate walk-over peaks
+  base_window_s: 300.0      # local window for the demo/discussion motion level around a spike
+  spike_halfwidth_s: 30.0   # skip +/- this around a peak when measuring those levels
+  # Soft length priors -- demos run ~11-15 min, discussions ~25-30 min. Used to
+  # pick the right spike when several compete (e.g. a burst inside the demo) and
+  # to score confidence. NOT a hard gate: a single clear spike still wins.
+  expected_demo_min_s: 660          # ~11 min
+  expected_demo_max_s: 900          # ~15 min
+  expected_discussion_min_s: 1500   # ~25 min
+  expected_discussion_max_s: 1800   # ~30 min
+  length_prior_margin_s: 300.0      # 5-min soft falloff outside the expected ranges
+  # Soft setup-trim: skip a quiet "setup" lead-in and start the Demo when the crowd
+  # floods in. Auto + GATED -- only trims when there's a clear quiet-start -> jump
+  # in activity (person count if available, else motion); otherwise Demo starts at 0.
+  # Disable entirely with --keep-setup.
+  trim_setup: true
+  setup_probe_s: 45.0       # window at the start used to estimate the "setup" activity level
+  min_setup_s: 20.0         # only trim if the quiet setup lasts at least this long
+  min_influx_step: 0.30     # demo activity must exceed setup by this fraction to count as a flood
+  influx_sustain_s: 20.0    # activity must stay up this long after the flood (not a blip)
+  agree_tol_s: 10.0         # (reserved) cross-check tolerance
+
+# -- Stage G: cut + output --------------------------------------------------
+cut:
+  snap_to_motion_min: true
+  snap_window_s: 4.0        # search +/- this for a quiet frame to snap the cut to
+  pad_s: 1.0                # extra padding kept on each side of the cut
+  mode: copy                # copy (instant, keyframe-snapped) | reencode (frame-exact)
+
+cache:
+  dir: cache
+outputs:
+  dir: outputs
