@@ -5,6 +5,14 @@ mock scenario (**demo**) to the seated group debrief (**discussion**), and
 optionally split the video there — with **no training data** and **no per-video
 manual setup**, accurate to ~1–2 s, generalizing across rooms and cameras.
 
+## Motivation
+
+Each session is captured as a long, multi-gigabyte recording, and finding the
+demo→discussion cut by hand meant scrubbing through every file and trimming it
+manually — slow, tedious, and impossible to keep up with as the recordings piled
+up. sim_cut does that pass automatically, so the time goes into the research
+instead of the scrubbing.
+
 ## Why this generalizes across rooms
 
 The physical event is "most people go from standing to sitting." But the signal
