@@ -1,6 +1,6 @@
 # sim_cut — demo→discussion cut detection
 
-Automatically find where a medical-simulation video switches from the active
+Automatically find where a medical simulation video switches from the active
 mock scenario (**demo**) to the seated group debrief (**discussion**), and
 optionally split the video there — with **no training data** and **no per-video
 manual setup**, accurate to ~1–2 s, generalizing across rooms and cameras.
